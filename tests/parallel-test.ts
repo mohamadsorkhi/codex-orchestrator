@@ -10,7 +10,11 @@ const tasks: OrchestratorTask[] = Array.from({ length: 5 }, (_, index) => ({
 const results = await runTasks(tasks, 2);
 
 for (const [id, result] of results) {
-  console.log(`${id}: ${result}`);
+  if (result.status === "completed") {
+    console.log(`${id}: ${result.output}`);
+  } else {
+    console.log(`${id}: FAILED - ${result.error}`);
+  }
 }
 
 console.log(

@@ -9,3 +9,10 @@ export interface OrchestratorTask {
   prompt: string;
   status: TaskStatus;
 }
+
+export interface TaskResult {
+  taskId: string;
+  status: "completed" | "failed";
+  output?: string;
+  error?: string;
+}

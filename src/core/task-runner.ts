@@ -8,13 +8,15 @@ const codex = new Codex();
 export async function runTask(task: OrchestratorTask): Promise<string> {
   task.status = "running";
 
-  const worktree = await createTaskWorktree();
+  let worktree: Awaited<ReturnType<typeof createTaskWorktree>> | undefined;
 
   try {
+    worktree = await createTaskWorktree();
+
     const result = await withRetry(
       async () => {
         const thread = codex.startThread({
-          workingDirectory: worktree.path,
+          workingDirectory: worktree!.path,
           skipGitRepoCheck: true,
         });
 
@@ -33,6 +35,6 @@ export async function runTask(task: OrchestratorTask): Promise<string> {
     task.status = "failed";
     throw error;
   } finally {
-    await worktree.cleanup();
+    await worktree?.cleanup();
   }
 }

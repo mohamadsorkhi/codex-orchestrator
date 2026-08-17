@@ -14,7 +14,17 @@ try {
 
 try {
   await access(worktree.path);
-  throw new Error("Worktree directory still exists after cleanup.");
-} catch {
-  console.log("WORKTREE_CLEANUP_OK");
+} catch (error) {
+  if (
+    error instanceof Error &&
+    "code" in error &&
+    error.code === "ENOENT"
+  ) {
+    console.log("WORKTREE_CLEANUP_OK");
+    process.exit(0);
+  }
+
+  throw error;
 }
+
+throw new Error("Worktree directory still exists after cleanup.");

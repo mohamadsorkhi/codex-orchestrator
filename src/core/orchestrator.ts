@@ -47,7 +47,19 @@ export async function runTasks(
       }
 
       if (store) {
-        await store.save(tasks);
+        try {
+          await store.save(tasks);
+        } catch (error) {
+          task.status = "failed";
+
+          result = {
+            taskId: task.id,
+            status: "failed",
+            error: `Checkpoint failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          };
+        }
       }
 
       return [task.id, result] as const;

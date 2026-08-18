@@ -8,11 +8,22 @@ export async function runTasks(
   concurrency = 3,
   stateFile?: string,
 ): Promise<Map<string, TaskResult>> {
+  const taskIds = new Set<string>();
+
+  for (const task of tasks) {
+    if (taskIds.has(task.id)) {
+      throw new Error(`Duplicate task id: ${task.id}`);
+    }
+
+    taskIds.add(task.id);
+  }
+
   const store = stateFile ? new StateStore(stateFile) : undefined;
 
   if (store) {
     await store.save(tasks);
   }
+
   const entries = await mapWithConcurrency(
     tasks,
     concurrency,
@@ -45,10 +56,3 @@ export async function runTasks(
 
   return new Map(entries);
 }
-
-
-
-
-
-
-

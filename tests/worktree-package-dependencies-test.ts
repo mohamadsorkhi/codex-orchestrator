@@ -11,9 +11,16 @@ import { createTaskWorktree } from "../src/core/worktree.js";
 
 const execFileAsync = promisify(execFile);
 const originalDirectory = process.cwd();
-const packageDirectory = join(
+const packageRootDirectory = join(
   originalDirectory,
-  "tests",
+  "src",
+);
+const callerDirectory = join(
+  packageRootDirectory,
+  "core",
+);
+const packageDirectory = join(
+  packageRootDirectory,
   "node_modules",
   "worktree-local-dependency",
 );
@@ -65,7 +72,7 @@ try {
     "utf8",
   );
 
-  process.chdir(join(originalDirectory, "tests"));
+  process.chdir(callerDirectory);
   worktree = await createTaskWorktree();
 
   const { stdout } = await execFileAsync(
@@ -82,12 +89,13 @@ try {
 
   if (!stdout.includes("PACKAGE_LOCAL_DEPENDENCY_OK")) {
     throw new Error(
-      "Worker could not resolve package-local dependencies.",
+      "Worker could not resolve dependencies from an intermediate package root.",
     );
   }
 
   const workerMarker = join(
     worktree.path,
+    "..",
     "node_modules",
     "worktree-local-dependency",
     ".worker-marker",
@@ -97,7 +105,7 @@ try {
 
   if (await pathExists(sourceMarker)) {
     throw new Error(
-      "Worker modified the caller's package-local dependencies.",
+      "Worker modified intermediate package dependencies.",
     );
   }
 

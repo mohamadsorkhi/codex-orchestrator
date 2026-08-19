@@ -68,30 +68,36 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
     worktreePath,
     callerRelativePath,
   );
-  const rootDependenciesPath = join(
-    repositoryRoot,
-    "node_modules",
-  );
-  const worktreeRootDependenciesPath = join(
-    worktreePath,
-    "node_modules",
-  );
-  const callerDependenciesPath = join(
-    callerDirectory,
-    "node_modules",
-  );
-  const workerDependenciesPath = join(
-    workerDirectory,
-    "node_modules",
-  );
 
-  const dependencyCopies = [
-    worktreeRootDependenciesPath,
-  ];
+  const ancestorRelativePaths = [""];
+  let currentRelativePath = "";
 
-  if (callerRelativePath) {
-    dependencyCopies.push(workerDependenciesPath);
+  for (
+    const segment of callerRelativePath
+      .split(/[\\/]+/)
+      .filter(Boolean)
+  ) {
+    currentRelativePath = join(
+      currentRelativePath,
+      segment,
+    );
+    ancestorRelativePaths.push(currentRelativePath);
   }
+
+  const dependencyCopies = ancestorRelativePaths.map(
+    (ancestorRelativePath) => ({
+      source: join(
+        repositoryRoot,
+        ancestorRelativePath,
+        "node_modules",
+      ),
+      destination: join(
+        worktreePath,
+        ancestorRelativePath,
+        "node_modules",
+      ),
+    }),
+  );
 
   try {
     await execFileAsync(
@@ -100,21 +106,16 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
       { cwd: repositoryRoot },
     );
 
-    await copyDependenciesIfPresent(
-      rootDependenciesPath,
-      worktreeRootDependenciesPath,
-    );
-
-    if (callerRelativePath) {
+    for (const dependencyCopy of dependencyCopies) {
       await copyDependenciesIfPresent(
-        callerDependenciesPath,
-        workerDependenciesPath,
+        dependencyCopy.source,
+        dependencyCopy.destination,
       );
     }
   } catch (error) {
     await Promise.all(
-      dependencyCopies.map((path) =>
-        rm(path, {
+      dependencyCopies.map((dependencyCopy) =>
+        rm(dependencyCopy.destination, {
           recursive: true,
           force: true,
         }),
@@ -144,8 +145,8 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
 
     async cleanup(): Promise<void> {
       await Promise.all(
-        dependencyCopies.map((path) =>
-          rm(path, {
+        dependencyCopies.map((dependencyCopy) =>
+          rm(dependencyCopy.destination, {
             recursive: true,
             force: true,
           }),

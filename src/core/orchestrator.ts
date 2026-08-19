@@ -59,6 +59,12 @@ export async function runTasks(
               error instanceof Error ? error.message : String(error)
             }`,
           };
+
+          try {
+            await store.save(tasks);
+          } catch {
+            // Preserve the structured checkpoint failure result.
+          }
         }
       }
 

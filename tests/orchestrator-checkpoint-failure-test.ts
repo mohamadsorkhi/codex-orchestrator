@@ -54,6 +54,14 @@ try {
     throw new Error("Not all workers settled after checkpoint failures.");
   }
 
+  const expectedSaveCallCount = 1 + tasks.length * 2;
+
+  if (saveCallCount !== expectedSaveCallCount) {
+    throw new Error(
+      `Expected ${expectedSaveCallCount} save attempts, got ${saveCallCount}.`,
+    );
+  }
+
   if (tasks.some((task) => task.status !== "failed")) {
     throw new Error("Checkpoint failures did not mark every task as failed.");
   }

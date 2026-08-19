@@ -1,10 +1,9 @@
 import { execFile } from "node:child_process";
 import {
   access,
+  cp,
   mkdtemp,
   rm,
-  symlink,
-  unlink,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
@@ -26,18 +25,6 @@ function hasErrorCode(
     "code" in error &&
     error.code === code
   );
-}
-
-async function removeDependencyLink(
-  dependencyLinkPath: string,
-): Promise<void> {
-  try {
-    await unlink(dependencyLinkPath);
-  } catch (error) {
-    if (!hasErrorCode(error, "ENOENT")) {
-      throw error;
-    }
-  }
 }
 
 export async function createTaskWorktree(): Promise<TaskWorktree> {
@@ -78,10 +65,14 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
     try {
       await access(dependenciesPath);
 
-      await symlink(
+      await cp(
         dependenciesPath,
         worktreeDependenciesPath,
-        process.platform === "win32" ? "junction" : "dir",
+        {
+          recursive: true,
+          force: false,
+          errorOnExist: true,
+        },
       );
     } catch (error) {
       if (!hasErrorCode(error, "ENOENT")) {
@@ -89,7 +80,10 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
       }
     }
   } catch (error) {
-    await removeDependencyLink(worktreeDependenciesPath);
+    await rm(worktreeDependenciesPath, {
+      recursive: true,
+      force: true,
+    });
 
     try {
       await execFileAsync(
@@ -101,7 +95,11 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
       // The worktree may not have been registered.
     }
 
-    await rm(worktreePath, { recursive: true, force: true });
+    await rm(worktreePath, {
+      recursive: true,
+      force: true,
+    });
+
     throw error;
   }
 
@@ -114,7 +112,10 @@ export async function createTaskWorktree(): Promise<TaskWorktree> {
     path: workerDirectory,
 
     async cleanup(): Promise<void> {
-      await removeDependencyLink(worktreeDependenciesPath);
+      await rm(worktreeDependenciesPath, {
+        recursive: true,
+        force: true,
+      });
 
       try {
         await execFileAsync(

@@ -1,11 +1,19 @@
+export function validateConcurrencyLimit(
+  limit: number,
+): void {
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error(
+      "Concurrency limit must be a positive integer.",
+    );
+  }
+}
+
 export async function mapWithConcurrency<T, R>(
   items: T[],
   limit: number,
   worker: (item: T) => Promise<R>,
 ): Promise<R[]> {
-  if (!Number.isInteger(limit) || limit < 1) {
-    throw new Error("Concurrency limit must be a positive integer.");
-  }
+  validateConcurrencyLimit(limit);
 
   const results: R[] = new Array(items.length);
   let nextIndex = 0;

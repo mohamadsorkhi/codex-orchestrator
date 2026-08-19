@@ -1,6 +1,12 @@
-import type { OrchestratorTask, TaskResult } from "./types.js";
+import type {
+  OrchestratorTask,
+  TaskResult,
+} from "./types.js";
 import { runTask } from "./task-runner.js";
-import { mapWithConcurrency } from "./concurrency.js";
+import {
+  mapWithConcurrency,
+  validateConcurrencyLimit,
+} from "./concurrency.js";
 import { StateStore } from "./state-store.js";
 
 export async function runTasks(
@@ -8,6 +14,8 @@ export async function runTasks(
   concurrency = 3,
   stateFile?: string,
 ): Promise<Map<string, TaskResult>> {
+  validateConcurrencyLimit(concurrency);
+
   const taskIds = new Set<string>();
 
   for (const task of tasks) {
@@ -18,7 +26,9 @@ export async function runTasks(
     taskIds.add(task.id);
   }
 
-  const store = stateFile ? new StateStore(stateFile) : undefined;
+  const store = stateFile
+    ? new StateStore(stateFile)
+    : undefined;
 
   if (store) {
     await store.save(tasks);
@@ -42,7 +52,10 @@ export async function runTasks(
         result = {
           taskId: task.id,
           status: "failed",
-          error: error instanceof Error ? error.message : String(error),
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
         };
       }
 
@@ -56,7 +69,9 @@ export async function runTasks(
             taskId: task.id,
             status: "failed",
             error: `Checkpoint failed: ${
-              error instanceof Error ? error.message : String(error)
+              error instanceof Error
+                ? error.message
+                : String(error)
             }`,
           };
 

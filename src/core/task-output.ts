@@ -41,6 +41,7 @@ Result contract:
 - Set status to "blocked" when access, permissions, missing files, unavailable tools, or another blocker prevents evidence-backed completion.
 - Put the successful task result in output.
 - Put the blocker reason in error.
+- Leave error empty when status is "completed".
 - Never report a blocked or incomplete task as completed.`;
 }
 
@@ -95,6 +96,12 @@ export function parseTaskOutput(response: string): string {
       "Agent reported that the task was blocked.";
 
     throw new BlockedTaskError(reason);
+  }
+
+  if (candidate.error.trim() !== "") {
+    throw new BlockedTaskError(
+      candidate.error.trim(),
+    );
   }
 
   if (candidate.output.trim() === "") {

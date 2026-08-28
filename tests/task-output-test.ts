@@ -45,6 +45,29 @@ assert.throws(
     parseTaskOutput(
       JSON.stringify({
         status: "completed",
+        output: "Partial audit result.",
+        error: "Repository access denied.",
+      }),
+    ),
+  (error: unknown) => {
+    assert.ok(
+      error instanceof BlockedTaskError,
+    );
+
+    assert.match(
+      error.message,
+      /Repository access denied/,
+    );
+
+    return true;
+  },
+);
+
+assert.throws(
+  () =>
+    parseTaskOutput(
+      JSON.stringify({
+        status: "completed",
         output: "",
         error: "",
       }),

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { parseTaskOutput } from "../src/core/task-output.js";
+import {
+  BlockedTaskError,
+  parseTaskOutput,
+} from "../src/core/task-output.js";
 
 const completedOutput = parseTaskOutput(
   JSON.stringify({
@@ -23,7 +26,18 @@ assert.throws(
         error: "Repository access denied.",
       }),
     ),
-  /Repository access denied/,
+  (error: unknown) => {
+    assert.ok(
+      error instanceof BlockedTaskError,
+    );
+
+    assert.match(
+      error.message,
+      /Repository access denied/,
+    );
+
+    return true;
+  },
 );
 
 assert.throws(

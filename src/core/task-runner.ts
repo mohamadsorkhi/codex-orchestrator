@@ -2,6 +2,7 @@ import { Codex } from "@openai/codex-sdk";
 import type { OrchestratorTask } from "./types.js";
 import { withRetry } from "./retry.js";
 import {
+  BlockedTaskError,
   buildTaskPrompt,
   parseTaskOutput,
   taskOutputSchema,
@@ -43,6 +44,11 @@ export async function runTask(
       {
         maxAttempts: 3,
         delayMs: 1000,
+        shouldRetry: (error) =>
+          !(
+            error instanceof
+            BlockedTaskError
+          ),
       },
     );
 

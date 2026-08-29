@@ -1,14 +1,17 @@
+import assert from "node:assert/strict";
 import { withRetry } from "../src/core/retry.js";
 
-let attempts = 0;
+let retryableAttempts = 0;
 
 const result = await withRetry(
   async (attempt) => {
-    attempts = attempt;
-    console.log(`attempt: ${attempt}`);
+    retryableAttempts = attempt;
+    console.log(`retryable attempt: ${attempt}`);
 
     if (attempt < 3) {
-      throw new Error(`Simulated failure on attempt ${attempt}`);
+      throw new Error(
+        `Simulated failure on attempt ${attempt}`,
+      );
     }
 
     return "RETRY_TEST_OK";
@@ -19,15 +22,42 @@ const result = await withRetry(
   },
 );
 
-console.log("result:", result);
-console.log("attempts:", attempts);
+assert.equal(
+  result,
+  "RETRY_TEST_OK",
+);
 
-if (result !== "RETRY_TEST_OK") {
-  throw new Error("Retry result is incorrect.");
-}
+assert.equal(
+  retryableAttempts,
+  3,
+);
 
-if (attempts !== 3) {
-  throw new Error(`Expected 3 attempts, got ${attempts}`);
-}
+const deterministicError = new Error(
+  "DETERMINISTIC_BLOCKER",
+);
+
+let nonRetryableAttempts = 0;
+
+await assert.rejects(
+  () =>
+    withRetry(
+      async () => {
+        nonRetryableAttempts += 1;
+        throw deterministicError;
+      },
+      {
+        maxAttempts: 3,
+        delayMs: 100,
+        shouldRetry: (error) =>
+          error !== deterministicError,
+      },
+    ),
+  /DETERMINISTIC_BLOCKER/,
+);
+
+assert.equal(
+  nonRetryableAttempts,
+  1,
+);
 
 console.log("RETRY_BEHAVIOR_OK");
